@@ -1,0 +1,17 @@
+
+Senior Python Developer Position
+TechCorp Solutions
+
+Requirements:
+- 5+ years Python development experience
+- Experience with Django/Flask frameworks
+- Knowledge of PostgreSQL and MongoDB
+- Familiarity with AWS cloud services
+- Strong problem-solving skills
+- Bachelor's degree in Computer Science
+
+Responsibilities:
+- Design and develop scalable web applications
+- Lead technical architecture decisions
+- Mentor junior developers
+- Collaborate with product teams

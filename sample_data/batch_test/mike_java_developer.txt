@@ -1,0 +1,24 @@
+
+Mike Rodriguez
+Java Developer
+Email: mike.rodriguez@email.com
+Phone: +1-555-0789
+
+EXPERIENCE:
+Java Developer at Enterprise Corp (2019-2024)
+- Developed enterprise applications using Java Spring
+- Worked with Oracle databases
+- Experience with microservices architecture
+- Used Jenkins for CI/CD
+
+Software Engineer at TechStart (2017-2019)
+- Built web services using Java
+- Basic database management
+- Agile development practices
+
+EDUCATION:
+Bachelor of Computer Engineering
+Engineering University (2013-2017)
+
+SKILLS:
+Java, Spring Boot, Oracle, Microservices, Jenkins, Maven, Git
