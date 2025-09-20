@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # Resume Analyzer Application
+  resume-analyzer:
+    build: .
+    container_name: resume-analyzer-app
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_TYPE=postgresql
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=resume_analyzer
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres123
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - resume-analyzer-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: resume-analyzer-db
+    environment:
+      - POSTGRES_DB=resume_analyzer
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - resume-analyzer-network
+
+  # Redis for Caching
+  redis:
+    image: redis:7-alpine
+    container_name: resume-analyzer-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    networks:
+      - resume-analyzer-network
+
+  # pgAdmin for Database Management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: resume-analyzer-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@innomatics.in
+      - PGADMIN_DEFAULT_PASSWORD=admin123
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - resume-analyzer-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  resume-analyzer-network:
+    driver: bridge

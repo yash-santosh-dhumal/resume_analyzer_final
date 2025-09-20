@@ -1,0 +1,43 @@
+Sarah Johnson
+Junior Web Developer
+Email: sarah.j@email.com
+Phone: (555) 987-6543
+
+PROFESSIONAL SUMMARY
+Recent computer science graduate with 1 year of experience in web development. Passionate about learning new technologies and building user-friendly applications.
+
+TECHNICAL SKILLS
+- Programming Languages: JavaScript, HTML, CSS, Python (basic)
+- Web Frameworks: React, Express.js
+- Databases: MySQL
+- Tools: Git, npm, VS Code
+- Design: Bootstrap, CSS Grid
+
+PROFESSIONAL EXPERIENCE
+
+Junior Web Developer | StartupXYZ (2023-2024)
+- Built responsive websites using React and JavaScript
+- Worked with designers to implement UI/UX mockups
+- Fixed bugs and performed code reviews
+- Participated in daily standups and sprint planning
+
+Intern Developer | Local Agency (Summer 2023)
+- Created landing pages using HTML, CSS, and JavaScript
+- Learned basic Python scripting
+- Assisted with WordPress customizations
+
+EDUCATION
+Bachelor of Science in Computer Science
+State University (2019-2023)
+GPA: 3.6/4.0
+
+PROJECTS
+- Personal Portfolio Website: Built using React and deployed on Netlify
+- Todo App: Simple task management app with local storage
+- Weather App: Fetches data from weather API using JavaScript
+
+COURSEWORK
+- Data Structures and Algorithms
+- Web Development
+- Database Systems
+- Software Engineering

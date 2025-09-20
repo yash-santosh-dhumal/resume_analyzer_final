@@ -1,0 +1,46 @@
+John Smith
+Senior Python Developer
+Email: john.smith@email.com
+Phone: (555) 123-4567
+
+PROFESSIONAL SUMMARY
+Experienced Senior Python Developer with 6 years of expertise in developing scalable web applications using Django and Flask. Proficient in cloud technologies, database management, and leading development teams.
+
+TECHNICAL SKILLS
+- Programming Languages: Python, JavaScript, SQL
+- Web Frameworks: Django, Flask, React, Node.js
+- Databases: PostgreSQL, MongoDB, Redis
+- Cloud Platforms: AWS (EC2, S3, RDS, Lambda)
+- DevOps: Docker, Kubernetes, Jenkins, CI/CD
+- Version Control: Git, GitHub
+- APIs: REST, GraphQL
+- Methodologies: Agile, Scrum, TDD
+
+PROFESSIONAL EXPERIENCE
+
+Senior Python Developer | TechCorp Solutions (2019-2024)
+- Led development of microservices architecture using Django and Docker
+- Implemented AWS cloud infrastructure serving 100K+ users
+- Mentored team of 5 junior developers
+- Designed and built REST APIs for mobile applications
+- Reduced deployment time by 60% through CI/CD pipeline automation
+- Collaborated with product managers in Agile sprints
+
+Python Developer | WebDev Inc (2018-2019)
+- Developed web applications using Flask and PostgreSQL
+- Integrated third-party APIs and payment systems
+- Implemented automated testing suites
+- Optimized database queries improving performance by 40%
+
+EDUCATION
+Bachelor of Science in Computer Science
+University of Technology (2014-2018)
+
+CERTIFICATIONS
+- AWS Certified Solutions Architect
+- Certified Scrum Master
+
+PROJECTS
+- E-commerce Platform: Built scalable platform handling 10K concurrent users
+- Data Analytics Dashboard: Created real-time dashboard using Django and React
+- API Gateway: Implemented microservices gateway using Kong and Docker

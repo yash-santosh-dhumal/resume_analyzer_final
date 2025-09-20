@@ -1,0 +1,39 @@
+Senior Python Developer Position
+
+Company: Tech Innovations Inc.
+Location: Remote
+
+Job Description:
+We are seeking a highly skilled Senior Python Developer with 5+ years of experience to join our dynamic team. The ideal candidate will have extensive experience in Python development, web frameworks, and cloud technologies.
+
+Required Skills:
+- Python (Django, Flask)
+- JavaScript and React
+- PostgreSQL and MongoDB
+- AWS cloud services
+- Docker and Kubernetes
+- Git version control
+- API development and integration
+- Agile/Scrum methodologies
+
+Responsibilities:
+- Design and develop scalable web applications
+- Lead technical architecture decisions
+- Mentor junior developers
+- Collaborate with cross-functional teams
+- Implement CI/CD pipelines
+- Ensure code quality and best practices
+
+Requirements:
+- Bachelor's degree in Computer Science or related field
+- 5+ years of Python development experience
+- Experience with cloud deployment
+- Strong problem-solving skills
+- Excellent communication skills
+- Leadership experience preferred
+
+Benefits:
+- Competitive salary
+- Health insurance
+- Remote work flexibility
+- Professional development opportunities
