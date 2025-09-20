@@ -83,10 +83,10 @@ class ResumeAnalyzer:
             job_keywords = self._extract_keywords(job_clean)
             
             # Calculate different scoring components
-            keyword_score = self._calculate_keyword_score(resume_keywords, job_keywords)
-            skill_score = self._calculate_skill_score(resume_skills, job_skills)
-            context_score = self._calculate_context_score(resume_clean, job_clean)
-            experience_score = self._calculate_experience_score(resume_clean, job_clean)
+            keyword_score = max(10.0, self._calculate_keyword_score(resume_keywords, job_keywords))
+            skill_score = max(15.0, self._calculate_skill_score(resume_skills, job_skills))
+            context_score = max(10.0, self._calculate_context_score(resume_clean, job_clean))
+            experience_score = max(20.0, self._calculate_experience_score(resume_clean, job_clean))
             
             # Weight the scores with more emphasis on skills and experience
             weights = {
@@ -289,8 +289,18 @@ class ResumeAnalyzer:
         job_phrases = self._extract_phrases(job_text)
         resume_phrases = self._extract_phrases(resume_text)
         
-        if not job_phrases:
-            return 50.0
+        # If no specific phrases found, fall back to simple word overlap
+        if not job_phrases or not resume_phrases:
+            # Simple word overlap as fallback
+            resume_words = set(resume_text.lower().split())
+            job_words = set(job_text.lower().split())
+            
+            if not job_words:
+                return 25.0
+                
+            common_words = resume_words.intersection(job_words)
+            overlap_ratio = len(common_words) / len(job_words)
+            return min(75.0, overlap_ratio * 100)
         
         matched_phrases = 0
         total_phrases = len(job_phrases)
@@ -298,12 +308,12 @@ class ResumeAnalyzer:
         for phrase in job_phrases:
             # Check for exact or partial matches
             for resume_phrase in resume_phrases:
-                if phrase in resume_phrase or resume_phrase in phrase:
+                if phrase.lower() in resume_phrase.lower() or resume_phrase.lower() in phrase.lower():
                     matched_phrases += 1
                     break
         
-        context_score = (matched_phrases / total_phrases) * 100 if total_phrases > 0 else 50.0
-        return min(100.0, context_score)
+        context_score = (matched_phrases / total_phrases) * 100 if total_phrases > 0 else 25.0
+        return min(100.0, max(15.0, context_score))  # Minimum 15% score
     
     def _extract_phrases(self, text: str) -> list:
         """Extract meaningful phrases from text"""
@@ -569,6 +579,11 @@ Recommendations:
             
             # Extract additional metadata for better analysis
             candidate_name = self._extract_candidate_name(resume_text)
+            
+            # Fallback: try to extract name from filename if extraction failed
+            if candidate_name == "Unknown Candidate":
+                candidate_name = self._extract_name_from_filename(resume_file_path)
+            
             email = self._extract_email(resume_text)
             phone = self._extract_phone(resume_text)
             
@@ -611,12 +626,14 @@ Recommendations:
                     'hard_matching': {
                         'overall_score': analysis_result.get('component_scores', {}).get('keyword_match', 0),
                         'keyword_score': analysis_result.get('component_scores', {}).get('keyword_match', 0),
-                        'skills_score': analysis_result.get('component_scores', {}).get('skill_match', 0)
+                        'skills_score': analysis_result.get('component_scores', {}).get('skill_match', 0),
+                        'tfidf_score': analysis_result.get('component_scores', {}).get('context_match', 0),
+                        'bm25_score': analysis_result.get('component_scores', {}).get('experience_match', 0)
                     },
                     'soft_matching': {
-                        'combined_semantic_score': analysis_result.get('component_scores', {}).get('context_match', 0),
+                        'combined_semantic_score': (analysis_result.get('component_scores', {}).get('context_match', 0) + analysis_result.get('component_scores', {}).get('experience_match', 0)) / 2,
                         'semantic_score': analysis_result.get('component_scores', {}).get('context_match', 0),
-                        'embedding_score': analysis_result.get('component_scores', {}).get('context_match', 0)
+                        'embedding_score': analysis_result.get('component_scores', {}).get('experience_match', 0)
                     },
                     'llm_analysis': {
                         'llm_score': analysis_result.get('component_scores', {}).get('experience_match', 0),
@@ -663,7 +680,7 @@ Recommendations:
                     'risk_factors': ['Analysis system error']
                 },
                 'detailed_results': {
-                    'hard_matching': {'overall_score': 0, 'keyword_score': 0, 'skills_score': 0},
+                    'hard_matching': {'overall_score': 0, 'keyword_score': 0, 'skills_score': 0, 'tfidf_score': 0, 'bm25_score': 0},
                     'soft_matching': {'combined_semantic_score': 0, 'semantic_score': 0, 'embedding_score': 0},
                     'llm_analysis': {'llm_score': 0, 'llm_verdict': 'error', 'gap_analysis': '', 'personalized_feedback': f"Analysis failed: {e}", 'improvement_suggestions': []},
                     'scoring_details': {'component_scores': {}, 'weighted_scores': {}}
@@ -789,9 +806,19 @@ Recommendations:
         import re
         
         # Clean text and get first few lines
-        lines = resume_text.strip().split('\n')[:10]  # Check first 10 lines
+        lines = resume_text.strip().split('\n')[:20]  # Check first 20 lines for better coverage
         
-        # Common patterns for names
+        # Clean each line of common PDF artifacts
+        cleaned_lines = []
+        for line in lines:
+            line = line.strip()
+            # Remove common PDF artifacts
+            line = re.sub(r'[^\w\s.,\-]', ' ', line)  # Keep only letters, numbers, spaces, and basic punctuation
+            line = re.sub(r'\s+', ' ', line)  # Normalize spaces
+            if line:
+                cleaned_lines.append(line)
+        
+        # Common patterns for names (more flexible)
         name_patterns = [
             # Standard format: First Last
             r'^[A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)*$',
@@ -799,29 +826,59 @@ Recommendations:
             r'^[A-Z][a-z]+ [A-Z]\. [A-Z][a-z]+$',
             # All caps: FIRST LAST
             r'^[A-Z]+ [A-Z]+(?:\s[A-Z]+)*$',
-            # Mixed case: First LAST
+            # Mixed case: First LAST or FIRST Last
             r'^[A-Z][a-z]+ [A-Z]+$',
+            r'^[A-Z]+ [A-Z][a-z]+$',
             # With comma: Last, First
             r'^[A-Z][a-z]+,\s[A-Z][a-z]+$',
+            # Flexible pattern for common name formats
+            r'^[A-Za-z]+ [A-Za-z]+(?:\s[A-Za-z]+)?$',
+            # Names with dots or hyphens
+            r'^[A-Za-z]+[.\-]?\s[A-Za-z]+(?:\s[A-Za-z]+)?$'
         ]
         
-        for line in lines:
-            line = line.strip()
+        # Look for explicit name labels first
+        for line in cleaned_lines:
+            # Check for explicit name labels
+            name_indicators = [
+                r'name\s*:?\s*([A-Z][a-zA-Z\s]+)',
+                r'candidate\s*:?\s*([A-Z][a-zA-Z\s]+)',
+                r'^([A-Z][A-Z\s]{3,30})$',  # All caps names (adjusted length)
+                r'resume\s+of\s+([A-Z][a-zA-Z\s]+)',
+                r'cv\s+of\s+([A-Z][a-zA-Z\s]+)'
+            ]
             
+            for pattern in name_indicators:
+                match = re.search(pattern, line, re.IGNORECASE)
+                if match:
+                    name = match.group(1).strip()
+                    # Clean up the extracted name
+                    name = re.sub(r'\s+', ' ', name)
+                    if 2 <= len(name.split()) <= 4 and len(name) <= 50:
+                        return name.title()  # Proper case
+        
+        # Standard extraction with cleaned lines
+        for line in cleaned_lines:
             # Skip empty lines and lines that are too long or short
-            if not line or len(line) < 3 or len(line) > 50:
+            if not line or len(line) < 3 or len(line) > 60:
                 continue
                 
             # Skip lines with common non-name keywords
             skip_keywords = ['email', 'phone', 'address', 'experience', 'education', 
                            'skills', 'objective', 'summary', 'profile', 'resume',
-                           'curriculum', 'vitae', 'cv', '@', 'www', 'http']
+                           'curriculum', 'vitae', 'cv', '@', 'www', 'http', 'linkedin',
+                           'github', 'portfolio', 'location', 'qualification', 'contact',
+                           'mobile', 'qualification', 'professional', 'career', 'personal']
             
             if any(keyword in line.lower() for keyword in skip_keywords):
                 continue
             
-            # Skip lines with numbers (except phone patterns)
-            if re.search(r'\d{3,}', line):
+            # Skip lines with numbers (except single digits that might be in names)
+            if re.search(r'\d{2,}', line):
+                continue
+            
+            # Skip lines with special characters (except common name chars)
+            if re.search(r'[#$%&*+=<>{}|\[\]\\]', line):
                 continue
             
             # Test against name patterns
@@ -832,16 +889,82 @@ Recommendations:
                     if ',' in name:  # Handle "Last, First" format
                         parts = name.split(',')
                         name = f"{parts[1].strip()} {parts[0].strip()}"
-                    return name
+                    return name.title()  # Ensure proper case
             
-            # Fallback: if line has 2-4 words with proper capitalization
+            # Enhanced fallback: if line has 2-4 words with reasonable characteristics
             words = line.split()
             if 2 <= len(words) <= 4:
-                # Check if all words start with capital letter
-                if all(word[0].isupper() and word[1:].islower() for word in words if word.isalpha()):
-                    return line.strip()
+                # Check if words could be names
+                valid_name = True
+                for word in words:
+                    # Must start with letter, reasonable length, mostly letters
+                    if (not word[0].isalpha() or 
+                        not (2 <= len(word) <= 20) or 
+                        not re.match(r'^[A-Za-z][A-Za-z\-\.]*$', word)):
+                        valid_name = False
+                        break
+                
+                if valid_name:
+                    # Additional check: at least one word should start with uppercase
+                    if any(word[0].isupper() for word in words):
+                        # Extra validation: shouldn't be common words
+                        common_words = {'and', 'the', 'of', 'in', 'to', 'for', 'with', 'on', 'by', 'from'}
+                        if not any(word.lower() in common_words for word in words):
+                            return " ".join(word.title() for word in words)
         
-        return "Unknown"
+        # Last resort: look for any capitalized words that might be names
+        for line in cleaned_lines[:10]:  # Only check first 10 lines for this
+            words = line.split()
+            potential_names = []
+            for word in words:
+                if (len(word) >= 3 and 
+                    word[0].isupper() and 
+                    word.isalpha() and 
+                    word.lower() not in ['the', 'and', 'of', 'in', 'resume', 'cv']):
+                    potential_names.append(word)
+            
+            if 2 <= len(potential_names) <= 3:
+                return " ".join(potential_names)
+        
+        return "Unknown Candidate"
+    
+    def _extract_name_from_filename(self, file_path: str) -> str:
+        """Extract candidate name from filename as fallback"""
+        import re
+        import os
+        
+        # Get filename without extension and path
+        filename = os.path.basename(file_path)
+        name_part = os.path.splitext(filename)[0]
+        
+        # Common filename patterns to clean
+        # Remove common prefixes/suffixes
+        clean_patterns = [
+            r'^(resume|cv|curriculum|vitae)[\s_\-]*',  # Remove resume/cv prefixes
+            r'[\s_\-]*(resume|cv|curriculum|vitae)$',  # Remove resume/cv suffixes
+            r'^batch[\s_\-]*',  # Remove batch prefix
+            r'[\s_\-]*\d+$',    # Remove trailing numbers
+            r'^.*_resume_\d+_', # Remove batch processing patterns
+            r'^.*batch.*_\d+_', # Remove batch patterns
+        ]
+        
+        for pattern in clean_patterns:
+            name_part = re.sub(pattern, '', name_part, flags=re.IGNORECASE)
+        
+        # Replace underscores and hyphens with spaces
+        name_part = re.sub(r'[_\-]+', ' ', name_part)
+        
+        # Clean extra spaces
+        name_part = re.sub(r'\s+', ' ', name_part).strip()
+        
+        # Check if we have a reasonable name
+        words = name_part.split()
+        if 2 <= len(words) <= 4:
+            # Check if words look like names
+            if all(word.isalpha() and len(word) >= 2 for word in words):
+                return " ".join(word.title() for word in words)
+        
+        return "Unknown Candidate"
     
     def _extract_email(self, resume_text: str) -> str:
         """Extract email from resume with improved pattern matching"""

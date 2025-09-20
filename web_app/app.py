@@ -161,25 +161,48 @@ st.markdown("""
     }
     
     .metric-card {
-        background-color: #2d2d30;
-        padding: 1rem;
-        border-radius: 0.5rem;
+        padding: 1.5rem;
+        border-radius: 12px;
         text-align: center;
         margin: 0.5rem 0;
         color: white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        transition: transform 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .metric-card-blue {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .metric-card-green {
+        background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    }
+    
+    .metric-card-orange {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .metric-card-cyan {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     }
     
     .metric-value {
-        font-size: 1.5rem;
+        font-size: 2rem;
         font-weight: bold;
-        color: #007acc;
+        color: white;
         margin: 0.5rem 0;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
     }
     
     .metric-label {
-        color: #cccccc;
-        font-size: 0.9rem;
+        color: rgba(255,255,255,0.9);
+        font-size: 0.95rem;
         margin: 0;
+        font-weight: 500;
     }
     
     .feature-card {
@@ -301,48 +324,43 @@ def main():
     
     # Sidebar navigation
     st.sidebar.markdown("### Navigation")
+    
+    # Get current page index for selectbox
+    pages = [
+        "🏠 Dashboard",
+        "📝 Analyze Resume", 
+        "📊 Batch Analysis",
+        "🔍 View Results",
+        "📈 Reports & Analytics",
+        "⚙️ System Status"
+    ]
+    
+    current_index = pages.index(st.session_state.current_page) if st.session_state.current_page in pages else 0
+    
     page = st.sidebar.selectbox(
         "Choose a page:",
-        [
-            "🏠 Dashboard",
-            "📝 Analyze Resume", 
-            "📊 Batch Analysis",
-            "🔍 View Results",
-            "📈 Reports & Analytics",
-            "⚙️ System Status"
-        ],
-        index=[
-            "🏠 Dashboard",
-            "📝 Analyze Resume", 
-            "📊 Batch Analysis",
-            "🔍 View Results",
-            "📈 Reports & Analytics",
-            "⚙️ System Status"
-        ].index(st.session_state.current_page) if st.session_state.current_page in [
-            "🏠 Dashboard",
-            "📝 Analyze Resume", 
-            "📊 Batch Analysis",
-            "🔍 View Results",
-            "📈 Reports & Analytics",
-            "⚙️ System Status"
-        ] else 0
+        pages,
+        index=current_index,
+        key="page_selector"
     )
     
-    # Update current page in session state
-    st.session_state.current_page = page
+    # Only update session state if selectbox value actually changed
+    if page != st.session_state.current_page:
+        st.session_state.current_page = page
+        st.rerun()
     
-    # Route to different pages
-    if page == "🏠 Dashboard":
+    # Route to different pages based on session state
+    if st.session_state.current_page == "🏠 Dashboard":
         show_dashboard()
-    elif page == "📝 Analyze Resume":
+    elif st.session_state.current_page == "📝 Analyze Resume":
         show_single_analysis()
-    elif page == "📊 Batch Analysis":
+    elif st.session_state.current_page == "📊 Batch Analysis":
         show_batch_analysis()
-    elif page == "🔍 View Results":
+    elif st.session_state.current_page == "🔍 View Results":
         show_results_viewer()
-    elif page == "📈 Reports & Analytics":
+    elif st.session_state.current_page == "📈 Reports & Analytics":
         show_reports_analytics()
-    elif page == "⚙️ System Status":
+    elif st.session_state.current_page == "⚙️ System Status":
         show_system_status()
 
 def show_dashboard():
@@ -360,7 +378,7 @@ def show_dashboard():
     
     with col1:
         st.markdown(f"""
-        <div class="metric-card">
+        <div class="metric-card metric-card-blue">
             <div class="metric-value">{len(st.session_state.analysis_results) if 'analysis_results' in st.session_state else 0}</div>
             <div class="metric-label">Analyses Today</div>
         </div>
@@ -368,7 +386,7 @@ def show_dashboard():
     
     with col2:
         st.markdown("""
-        <div class="metric-card">
+        <div class="metric-card metric-card-green">
             <div class="metric-value">Online</div>
             <div class="metric-label">System Status</div>
         </div>
@@ -376,7 +394,7 @@ def show_dashboard():
     
     with col3:
         st.markdown("""
-        <div class="metric-card">
+        <div class="metric-card metric-card-orange">
             <div class="metric-value">Enhanced</div>
             <div class="metric-label">Analyzer Type</div>
         </div>
@@ -389,7 +407,7 @@ def show_dashboard():
             avg_score = sum(scores) / len(scores) if scores else 0
         
         st.markdown(f"""
-        <div class="metric-card">
+        <div class="metric-card metric-card-cyan">
             <div class="metric-value">{avg_score:.1f}</div>
             <div class="metric-label">Avg Session Score</div>
         </div>
@@ -466,8 +484,8 @@ def show_dashboard():
         <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); 
                     padding: 1.5rem; border-radius: 12px; text-align: center; 
                     color: white; margin-bottom: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">�</div>
-            <h4 style="margin: 0.5rem 0; font-size: 1.1rem;">Reports & Analytics</h4>
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📊</div>
+            <h4 style="margin: 0.5rem 0; font-size: 1.1rem;">Analytics</h4>
             <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">
                 Performance Reports<br>
                 Trend Analysis<br>
@@ -583,15 +601,15 @@ def show_dashboard():
             <p style="margin: 1rem 0; opacity: 0.9;">
                 Upload your first resume and job description to get started with AI-powered analysis
             </p>
-            <div style="margin-top: 1.5rem;">
-                <button style="background: rgba(255,255,255,0.2); color: white; border: 2px solid white; 
-                              padding: 0.75rem 2rem; border-radius: 25px; cursor: pointer; 
-                              font-size: 1rem; font-weight: 600;">
-                    Start Your First Analysis
-                </button>
-            </div>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Center the start button
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🚀 Start Your First Analysis", type="primary", use_container_width=True, key="start_first_analysis"):
+                st.session_state.current_page = "📝 Analyze Resume"
+                st.rerun()
         
         # Quick start buttons
         col1, col2 = st.columns(2)
@@ -826,21 +844,30 @@ def display_detailed_report(results):
             for weakness in llm_details['weaknesses']:
                 st.write(f"• {weakness}")
     
-    with st.expander("👤 Candidate Profile"):
+    with st.expander("👤 Candidate Profile", expanded=True):
         candidate = results['resume_data']
+        
+        # Prominent candidate name header
+        candidate_name = candidate.get('candidate_name', 'Unknown Candidate')
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    padding: 1rem; border-radius: 8px; text-align: center; margin-bottom: 1rem;">
+            <h2 style="color: white; margin: 0; font-size: 1.8rem;">👤 {candidate_name}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
         col1, col2 = st.columns(2)
         
         with col1:
-            st.write(f"**Name**: {candidate.get('candidate_name', 'N/A')}")
-            st.write(f"**Email**: {candidate.get('email', 'N/A')}")
-            st.write(f"**Phone**: {candidate.get('phone', 'N/A')}")
+            st.write(f"**📧 Email**: {candidate.get('email', 'N/A')}")
+            st.write(f"**📱 Phone**: {candidate.get('phone', 'N/A')}")
         
         with col2:
-            st.write(f"**Experience**: {candidate.get('experience_years', 'N/A')} years")
-            st.write(f"**File**: {candidate.get('filename', 'N/A')}")
+            st.write(f"**💼 Experience**: {candidate.get('experience_years', 'N/A')} years")
+            st.write(f"**📄 File**: {candidate.get('filename', 'N/A')}")
         
         if candidate.get('skills'):
-            st.markdown("**Skills**:")
+            st.markdown("**🛠️ Skills**:")
             skills_text = ", ".join(candidate['skills'][:10])
             if len(candidate['skills']) > 10:
                 skills_text += f" ... and {len(candidate['skills']) - 10} more"
@@ -984,6 +1011,14 @@ def run_batch_analysis(jd_file, resume_files, save_to_db, include_summary):
         
         status_text.text("Analysis completed!")
         
+        # Debug: Show what we have
+        st.write(f"**DEBUG: Total results generated: {len(results)}**")
+        for i, result in enumerate(results):
+            success = result.get('metadata', {}).get('success', False)
+            name = result.get('resume_data', {}).get('candidate_name', 'Unknown')
+            filename = result.get('metadata', {}).get('resume_filename', 'Unknown')
+            st.write(f"Result {i+1}: {filename} - {name} - Success: {success}")
+        
         # Display batch results
         display_batch_results(results, include_summary)
         
@@ -1008,6 +1043,11 @@ def display_batch_results(results, include_summary):
             successful_results.append(r)
         else:
             failed_results.append(r)
+    
+    # Debug info
+    st.write(f"**DEBUG: Total input results: {len(results)}**")
+    st.write(f"**DEBUG: Successful results: {len(successful_results)}**")
+    st.write(f"**DEBUG: Failed results: {len(failed_results)}**")
     
     # Summary metrics
     col1, col2, col3, col4 = st.columns(4)
