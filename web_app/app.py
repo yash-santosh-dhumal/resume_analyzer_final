@@ -14,6 +14,7 @@ import json
 from pathlib import Path
 import sys
 import os
+import tempfile
 
 # Add src and project root directory to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
@@ -203,15 +204,15 @@ def show_dashboard():
         
         with col1:
             if st.button("📝 Analyze New Resume", use_container_width=True):
-                st.switch_page("📝 Analyze Resume")
+                st.info("Use the sidebar navigation to go to 'Analyze Resume' page")
         
         with col2:
             if st.button("📊 Batch Processing", use_container_width=True):
-                st.switch_page("📊 Batch Analysis")
+                st.info("Use the sidebar navigation to go to 'Batch Analysis' page")
         
         with col3:
             if st.button("🔍 View Results", use_container_width=True):
-                st.switch_page("🔍 View Results")
+                st.info("Use the sidebar navigation to go to 'View Results' page")
         
     except Exception as e:
         st.error(f"Failed to load dashboard data: {str(e)}")
@@ -487,30 +488,63 @@ def show_batch_analysis():
     st.markdown("## 📊 Batch Analysis")
     st.write("Analyze multiple resumes against a single job description.")
     
+    # Instructions
+    with st.expander("📋 How to use Batch Analysis", expanded=False):
+        st.markdown("""
+        **Steps to perform batch analysis:**
+        1. **Upload Job Description**: Upload a single PDF or DOCX file with the job requirements
+        2. **Upload Multiple Resumes**: 
+           - Click "Browse files" button below
+           - Select multiple resume files by:
+             - **Windows**: Hold Ctrl + Click each file
+             - **Mac**: Hold Cmd + Click each file
+             - Or use Shift + Click to select a range
+        3. **Configure Options**: Choose save and export preferences
+        4. **Start Analysis**: Click the analysis button to process all resumes
+        
+        **Supported file types**: PDF, DOCX
+        **Tip**: You can upload up to 20 resume files at once for efficient processing.
+        """)
+    
     # Job description upload
-    st.markdown("### 1. Upload Job Description")
+    st.markdown("### 1. 📄 Upload Job Description")
     jd_file = st.file_uploader(
         "Choose job description file",
-        type=['pdf', 'docx'],
-        key="batch_jd"
+        type=['pdf', 'docx', 'txt'],
+        key="batch_jd",
+        help="Upload the job description file that resumes will be matched against"
     )
     
+    if jd_file:
+        st.success(f"✅ Job description uploaded: {jd_file.name}")
+    
     # Multiple resume upload
-    st.markdown("### 2. Upload Resume Files")
+    st.markdown("### 2. 📂 Upload Resume Files")
+    st.info("💡 **Multi-select tip**: Hold Ctrl (Windows) or Cmd (Mac) while clicking to select multiple files")
+    
     resume_files = st.file_uploader(
-        "Choose resume files",
-        type=['pdf', 'docx'],
+        "Choose multiple resume files",
+        type=['pdf', 'docx', 'txt'],
         accept_multiple_files=True,
-        key="batch_resumes"
+        key="batch_resumes",
+        help="Select multiple resume files. Hold Ctrl/Cmd to select multiple files."
     )
     
     if resume_files:
-        st.write(f"Selected {len(resume_files)} resume files:")
-        for file in resume_files:
-            st.write(f"• {file.name}")
+        st.success(f"✅ Selected {len(resume_files)} resume files:")
+        
+        # Show file list in a nice format
+        for i, file in enumerate(resume_files, 1):
+            file_size = len(file.getvalue()) / 1024  # Size in KB
+            st.write(f"   {i}. **{file.name}** ({file_size:.1f} KB)")
+        
+        if len(resume_files) > 20:
+            st.warning("⚠️ You've selected more than 20 files. Consider processing in smaller batches for better performance.")
+    else:
+        st.info("📤 No resume files selected yet. Please upload multiple resume files above.")
     
     # Analysis options
-    st.markdown("### 3. Analysis Options")
+    st.markdown("### 3. ⚙️ Analysis Options")
     col1, col2 = st.columns(2)
     
     with col1:
@@ -519,63 +553,134 @@ def show_batch_analysis():
     with col2:
         export_format = st.selectbox("Export format", ["CSV", "Excel", "JSON"], key="batch_export")
     
-    # Start batch analysis
-    if st.button("🚀 Start Batch Analysis", type="primary", use_container_width=True):
-        if jd_file and resume_files:
+    # Validation and start button
+    st.markdown("### 4. 🚀 Run Analysis")
+    
+    # Show validation status
+    if jd_file and resume_files:
+        st.success(f"✅ Ready to analyze {len(resume_files)} resumes against the job description")
+        
+        # Estimate processing time
+        estimated_time = len(resume_files) * 3  # Rough estimate: 3 seconds per resume
+        st.info(f"⏱️ Estimated processing time: ~{estimated_time} seconds")
+        
+        # Start batch analysis button
+        if st.button("🚀 Start Batch Analysis", type="primary", use_container_width=True):
             run_batch_analysis(jd_file, resume_files, save_batch_to_db, export_format)
-        else:
-            st.error("Please upload job description and at least one resume file.")
+    else:
+        missing_items = []
+        if not jd_file:
+            missing_items.append("Job Description")
+        if not resume_files:
+            missing_items.append("Resume Files")
+        
+        st.error(f"❌ Missing: {', '.join(missing_items)}")
+        st.button("🚀 Start Batch Analysis", type="primary", use_container_width=True, disabled=True)
 
 def run_batch_analysis(jd_file, resume_files, save_to_db, export_format):
-    """Run batch analysis"""
-    try:
-        # Save job description temporarily
-        jd_path = save_uploaded_file(jd_file, "batch_jd")
+    """Run batch analysis with improved progress tracking and error handling"""
+    
+    # Create a container for the analysis results
+    analysis_container = st.container()
+    
+    with analysis_container:
+        st.markdown("## 🔄 Running Batch Analysis...")
         
-        # Save all resume files temporarily
-        resume_paths = []
-        for i, resume_file in enumerate(resume_files):
-            resume_path = save_uploaded_file(resume_file, f"batch_resume_{i}")
-            resume_paths.append(resume_path)
+        # Initialize progress tracking
+        progress_container = st.container()
         
-        # Progress tracking
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        # Run batch analysis
-        results = []
-        for i, resume_path in enumerate(resume_paths):
-            status_text.text(f"Analyzing resume {i+1}/{len(resume_paths)}: {Path(resume_path).name}")
+        with progress_container:
+            progress_bar = st.progress(0, text="Initializing...")
+            status_text = st.empty()
+            results_preview = st.empty()
             
-            try:
-                result = st.session_state.analyzer.analyze_resume_for_job(
-                    resume_path, jd_path, save_to_db
-                )
-                results.append(result)
-            except Exception as e:
-                st.error(f"Failed to analyze {Path(resume_path).name}: {str(e)}")
-                results.append({
-                    'metadata': {
-                        'resume_filename': Path(resume_path).name,
-                        'success': False,
-                        'error': str(e)
+        try:
+            # Save job description temporarily
+            status_text.info("📄 Processing job description...")
+            jd_path = save_uploaded_file(jd_file, "batch_jd")
+            
+            # Save all resume files temporarily
+            status_text.info("📂 Processing resume files...")
+            resume_paths = []
+            for i, resume_file in enumerate(resume_files):
+                resume_path = save_uploaded_file(resume_file, f"batch_resume_{i}")
+                resume_paths.append((resume_path, resume_file.name))
+            
+            # Run batch analysis
+            results = []
+            successful_count = 0
+            failed_count = 0
+            
+            for i, (resume_path, original_name) in enumerate(resume_paths):
+                # Update progress
+                progress = (i + 1) / len(resume_paths)
+                progress_bar.progress(progress, text=f"Analyzing {i+1}/{len(resume_paths)}: {original_name}")
+                
+                status_text.info(f"🔍 Analyzing resume {i+1}/{len(resume_paths)}: **{original_name}**")
+                
+                try:
+                    result = st.session_state.analyzer.analyze_resume_for_job(
+                        resume_path, jd_path, save_to_db
+                    )
+                    
+                    if result['metadata']['success']:
+                        result['metadata']['resume_filename'] = original_name
+                        results.append(result)
+                        successful_count += 1
+                        
+                        # Show quick preview of current result
+                        score = result['analysis_results']['overall_score']
+                        match_level = result['analysis_results']['match_level']
+                        candidate = result['resume_data']['candidate_name']
+                        
+                        results_preview.success(f"✅ **{candidate}**: Score {score:.1f} ({match_level.title()})")
+                        
+                    else:
+                        failed_count += 1
+                        results_preview.error(f"❌ Failed to analyze {original_name}")
+                        
+                except Exception as e:
+                    failed_count += 1
+                    error_result = {
+                        'metadata': {
+                            'resume_filename': original_name,
+                            'success': False,
+                            'error': str(e)
+                        }
                     }
-                })
+                    results.append(error_result)
+                    results_preview.error(f"❌ **{original_name}**: {str(e)}")
+                
+                # Small delay to make progress visible
+                import time
+                time.sleep(0.1)
             
-            progress_bar.progress((i + 1) / len(resume_paths))
-        
-        status_text.text("Analysis completed!")
-        
-        # Display batch results
-        display_batch_results(results, export_format)
-        
-        # Cleanup temporary files
-        os.unlink(jd_path)
-        for resume_path in resume_paths:
-            os.unlink(resume_path)
-        
-    except Exception as e:
-        st.error(f"Batch analysis failed: {str(e)}")
+            # Complete progress
+            progress_bar.progress(1.0, text="Analysis completed!")
+            status_text.success(f"🎉 Batch analysis completed! {successful_count} successful, {failed_count} failed")
+            
+            # Clear the preview after completion
+            results_preview.empty()
+            
+            # Display comprehensive results
+            if results:
+                display_batch_results(results, export_format)
+            else:
+                st.error("No results to display. All analyses failed.")
+            
+            # Cleanup temporary files
+            try:
+                os.unlink(jd_path)
+                for resume_path, _ in resume_paths:
+                    if os.path.exists(resume_path):
+                        os.unlink(resume_path)
+            except Exception as cleanup_error:
+                st.warning(f"⚠️ Cleanup warning: {str(cleanup_error)}")
+                
+        except Exception as e:
+            st.error(f"❌ Batch analysis failed: {str(e)}")
+            status_text.error("Analysis interrupted due to error")
+            progress_bar.progress(0, text="Analysis failed")
 
 def display_batch_results(results, export_format):
     """Display batch analysis results"""

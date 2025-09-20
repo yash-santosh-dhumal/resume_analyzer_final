@@ -1,0 +1,24 @@
+
+Sarah Kim
+Full Stack Developer
+Email: sarah.kim@email.com
+Phone: +1-555-0456
+
+EXPERIENCE:
+Full Stack Developer at Digital Agency (2020-2024)
+- Developed web applications using Python and React
+- Experience with Django REST framework
+- Used PostgreSQL for data storage
+- Basic AWS deployment experience
+
+Junior Developer at CodeCraft (2018-2020)
+- Learned Python programming
+- Built simple web applications
+- Basic database knowledge
+
+EDUCATION:
+Bachelor of Information Technology
+State College (2014-2018)
+
+SKILLS:
+Python, Django, React, PostgreSQL, HTML, CSS, JavaScript, Git
