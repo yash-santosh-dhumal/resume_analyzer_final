@@ -1011,14 +1011,6 @@ def run_batch_analysis(jd_file, resume_files, save_to_db, include_summary):
         
         status_text.text("Analysis completed!")
         
-        # Debug: Show what we have
-        st.write(f"**DEBUG: Total results generated: {len(results)}**")
-        for i, result in enumerate(results):
-            success = result.get('metadata', {}).get('success', False)
-            name = result.get('resume_data', {}).get('candidate_name', 'Unknown')
-            filename = result.get('metadata', {}).get('resume_filename', 'Unknown')
-            st.write(f"Result {i+1}: {filename} - {name} - Success: {success}")
-        
         # Display batch results
         display_batch_results(results, include_summary)
         
@@ -1043,11 +1035,6 @@ def display_batch_results(results, include_summary):
             successful_results.append(r)
         else:
             failed_results.append(r)
-    
-    # Debug info
-    st.write(f"**DEBUG: Total input results: {len(results)}**")
-    st.write(f"**DEBUG: Successful results: {len(successful_results)}**")
-    st.write(f"**DEBUG: Failed results: {len(failed_results)}**")
     
     # Summary metrics
     col1, col2, col3, col4 = st.columns(4)
@@ -1219,7 +1206,11 @@ def display_batch_results(results, include_summary):
         # Display all results (successful and failed) in dropdown sections
         all_results = successful_results + failed_results
         for i, result in enumerate(all_results, 1):
-            display_dropdown_individual_analysis(result, i)
+            try:
+                display_dropdown_individual_analysis(result, i)
+            except Exception as e:
+                # Silently continue to next result if there's an error
+                continue
     
     elif failed_results:
         # If no successful results but there are failed ones, still show individual analysis
@@ -1413,6 +1404,7 @@ def display_individual_student_result(result, student_number):
 
 def display_dropdown_individual_analysis(result, student_number):
     """Display individual analysis in a compact dropdown/expandable format"""
+    
     # Extract student data safely
     resume_data = result.get('resume_data', {})
     analysis_results = result.get('analysis_results', {})
@@ -1495,7 +1487,7 @@ def display_dropdown_individual_analysis(result, student_number):
             st.write(skills_text)
         
         # Detailed scores in collapsible sections
-        with st.expander("📊 Detailed Score Breakdown", expanded=False):
+        with st.expander(f"📊 Detailed Score Breakdown - Resume #{student_number}", expanded=False):
             hard_matching = detailed_results.get('hard_matching', {})
             soft_matching = detailed_results.get('soft_matching', {})
             llm_analysis = detailed_results.get('llm_analysis', {})
@@ -1530,7 +1522,7 @@ def display_dropdown_individual_analysis(result, student_number):
         # Recommendations and improvements
         feedback_col1, feedback_col2 = st.columns(2)
         with feedback_col1:
-            with st.expander("💪 Strengths & Recommendations", expanded=False):
+            with st.expander(f"💪 Strengths & Recommendations - Resume #{student_number}", expanded=False):
                 recommendations = analysis_results.get('recommendations', [])
                 if recommendations:
                     for i, rec in enumerate(recommendations[:5], 1):
@@ -1539,7 +1531,7 @@ def display_dropdown_individual_analysis(result, student_number):
                     st.write("No specific recommendations available")
         
         with feedback_col2:
-            with st.expander("⚠️ Areas for Improvement", expanded=False):
+            with st.expander(f"⚠️ Areas for Improvement - Resume #{student_number}", expanded=False):
                 risk_factors = analysis_results.get('risk_factors', [])
                 if risk_factors:
                     for i, risk in enumerate(risk_factors[:5], 1):
@@ -1549,7 +1541,7 @@ def display_dropdown_individual_analysis(result, student_number):
         
         # LLM Analysis Details
         if llm_analysis:
-            with st.expander("🤖 AI-Powered Analysis", expanded=False):
+            with st.expander(f"🤖 AI-Powered Analysis - Resume #{student_number}", expanded=False):
                 if 'gap_analysis' in llm_analysis:
                     st.markdown("**🔍 Gap Analysis:**")
                     gap_analysis = llm_analysis['gap_analysis']
